@@ -123,6 +123,18 @@ fn get_binding_val(name: &str, env: &Env) -> Value {
 }   
 
 
+// serialize - takes a Value and returns a serialized String
+fn serialize(v: &Value) -> String {
+    match v {
+        Value::Real(n) => format!("{}", n),
+        Value::Boolean(true) => "true".into(),
+        Value::Boolean(false) => "false".into(),
+        Value::String(s) => format!("{:?}", s),
+        Value::CloV(_) => "#<procedure>".into(),
+        Value::PrimV(_) => "#<primop>".into(),
+    }
+}
+
 // interp - takes the complete AST (ExprC) with an Env, returning a Value
 fn interp(e: &ExprC, env: &Env) -> Value {
     match e {
@@ -152,7 +164,7 @@ fn interp(e: &ExprC, env: &Env) -> Value {
 fn main() {
     let env = top_env(); // copy of top_env
 
-    println!("{:?}", interp( &ExprC::IdC(IdC {name : "+".into()}), &env));
+    println!("{:?}", serialize(&interp( &ExprC::IdC(IdC {name : "+".into()}), &env)));
 
     println!("Hello world!");
 }
@@ -170,6 +182,24 @@ mod tests {
     }
 
     #[test]
+    fn serialize_work() {
+        assert_eq!(serialize(&Value::Real(32.0)), "32");
+        assert_eq!(serialize(&Value::Boolean(true)), "true");
+        assert_eq!(serialize(&Value::Boolean(false)), "false");
+        assert_eq!(serialize(&Value::String("hello".into())), "\"hello\"");
+
+        let env = top_env();
+        let clo = Value::CloV(CloV {
+            params: vec!["x".into()],
+            body: Box::new(ExprC:: NumC(NumC {n: 112.0})),
+            env: env,
+        });
+        assert_eq!(serialize(&clo), "#<procedure>");
+        assert_eq!(serialize(&Value::PrimV(PrimV {op: "equal?".into()})), "#<primop>"); 
+
+    }
+
+    #[test]
     fn interp_if() {
         let expr = ExprC::IfC(IfC {
             v: Box::new(ExprC::IdC(IdC {name: "true".into()})),
@@ -179,5 +209,5 @@ mod tests {
         let env = top_env();
         assert!(matches!( interp(&expr, &env), Value::Real(1.0) ))
     }
-    
+
 }
