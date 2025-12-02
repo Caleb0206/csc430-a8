@@ -135,6 +135,7 @@ fn serialize(v: &Value) -> String {
     }
 }
 
+
 // interp - takes the complete AST (ExprC) with an Env, returning a Value
 fn interp(e: &ExprC, env: &Env) -> Value {
     match e {
@@ -156,9 +157,53 @@ fn interp(e: &ExprC, env: &Env) -> Value {
                 }
             }
         },
-        ExprC::AppC(AppC {expr, args}) => todo!(),
-        ExprC::LamC(LamC {args, body}) => todo!()
+        ExprC::AppC(AppC {expr, args}) => {
+            let f_val = interp(expr, env);
+            let arg_vals: Vec<Value> = args.iter().map(|a| interp(a, env)).collect();
+
+            match f_val {
+                Value::CloV(clo) => {
+                    if arg_vals.len() != clo.params.len() {
+                        panic!("SHEQ: Incorrect number of arguments, got {}, expected {}", arg_vals.len(), clo.params.len());
+                    }
+                    // extend the env
+                    let new_env = create_env(&clo.params, &arg_vals, &clo.env);
+                    interp(&clo.body, &new_env)
+                }
+                Value::PrimV(prim) => {
+                    todo!()
+                }
+                other => panic!("SHEQ: attempted to apply non function value of {:?}", other)
+            }
+        },
+        ExprC::LamC(LamC {args, body}) => {
+            Value::CloV(CloV {
+                params: args.clone(),
+                body: body.clone(),
+                env: env.clone(),
+            })
+        }
+        
     }
+}
+
+// create_env - takes a list of params, list of vals, and an Env to return a new extended Env
+fn create_env(params: &[String], vals: &[Value], base_env: &Env) -> Env {
+    if params.len() < vals.len() {
+        panic!("SHEQ: too many values were passed into the applicatoin {:?} {:?}", params, vals);
+    }
+    if params.len() > vals.len() {
+        panic!("SHEQ: too few values were passed in application {:?} {:?}", params, vals);
+    }
+
+    let mut new_env = base_env.clone();
+    for(p, v) in params.iter().zip(vals.iter()) {
+        new_env.push(Binding {
+            name: p.clone(),
+            val: Box::new(v.clone()),
+        });
+    }
+    new_env
 }
 
 fn main() {
@@ -209,5 +254,26 @@ mod tests {
         let env = top_env();
         assert!(matches!( interp(&expr, &env), Value::Real(1.0) ))
     }
+
+    #[test]
+    fn interp_lamda() {
+        let env = top_env();
+
+        let lam_expr = ExprC::LamC(LamC {
+            args: vec!["x".into()],
+            body: Box::new(ExprC::NumC(NumC { n: 5.0})),
+        });
+
+        let v = interp(&lam_expr, &env);
+
+        match v {
+            Value::CloV(clo) => {
+                assert_eq!(clo.params, vec!["x".to_string()]);
+            }
+            other => panic!("SHEQ: Expected closure, got {:?}", other),
+        }
+    }
+
+
 
 }
