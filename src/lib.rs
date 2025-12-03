@@ -107,6 +107,89 @@ pub fn top_env() -> Env {
     ]
 }
 
+
+// interp - takes the complete AST (ExprC) with an Env, returning a Value
+fn interp(e: &ExprC, env: &Env) -> Value {
+    match e {
+        ExprC::NumC(NumC {n}) => Value::Real(*n),
+        ExprC::StringC(StringC {s}) => Value::String(s.clone()),
+        ExprC::IdC(IdC {name}) => {
+            if is_reserved(name) {
+                panic!("SHEQ: id name is a reserved word, got {}", name);
+            } else {
+                get_binding_val(name, env)
+            }
+        },
+        ExprC::IfC(IfC {v, iftrue, iffalse}) => {
+            let test_val = interp(v, env);
+            match test_val {
+                Value::Boolean(b) => {
+                    if b {
+                        interp(iftrue, env)
+                    } else {
+                        interp(iffalse, env)
+                    }
+                }
+                other => {
+                    panic!("SHEQ: if expected boolean test, got {:?}", other);
+                }
+            }
+        },
+        ExprC::LamC(LamC {args, body}) => {
+            Value::CloV(CloV {
+                params: args.clone(),
+                body: body.clone(),
+                env: env.clone(),
+            })
+        },
+        ExprC::AppC(AppC {expr, args}) => {
+            let f_val = interp(expr, env);
+            let arg_vals: Vec<Value> = args.iter().map(|a| interp(a, env)).collect();
+
+            match f_val {
+                Value::CloV(clo) => {
+                    if arg_vals.len() != clo.params.len() {
+                        panic!("SHEQ: Incorrect number of arguments, got {}, expected {}", arg_vals.len(), clo.params.len());
+                    }
+                    // extend the env
+                    let new_env = create_env(&clo.params, &arg_vals, &clo.env);
+                    interp(&clo.body, &new_env)
+                }
+                Value::PrimV(prim) => {
+                    interp_prim(&prim, arg_vals)
+                }
+                other => panic!("SHEQ: attempted to apply non function value of {:?}", other)
+            }
+        },
+        
+    }
+}
+
+// interp_prim - interprets primops, takesa PrimV and a list of Values, returns a Value
+fn interp_prim(prim: &PrimV, args: Vec<Value>) -> Value {
+    match prim.op.as_str() {
+        "+" => {
+            match args.as_slice() {
+                // correct arity and types
+                [Value::Real(a), Value::Real(b)] => Value::Real(a + b),
+                // correct arity but wrong types
+                [_, _] => {
+                    panic!("SHEQ: Primv + expected 2 numbers, got {:?}", args);
+                }
+                // wrong arity
+                _ => {
+                    panic!("SHEQ: Incorrect number or arguments, got {:?}", args.len());
+                }
+            }
+        }
+
+        op => {
+            panic!("SHEQ: Invalid PrimV op, got {}", op);
+        }
+    }
+}
+
+
 // is_reserved - helper method to check if word is reserved
 fn is_reserved(name: &str) -> bool {
     RESERVED_KEYWORDS.iter().any(|kw| kw == &name)
@@ -129,61 +212,9 @@ fn serialize(v: &Value) -> String {
         Value::Real(n) => format!("{}", n),
         Value::Boolean(true) => "true".into(),
         Value::Boolean(false) => "false".into(),
-        Value::String(s) => format!("{:?}", s),
+        Value::String(s) => format!("{:?}", s),  // :? is same as ~v from Racket
         Value::CloV(_) => "#<procedure>".into(),
         Value::PrimV(_) => "#<primop>".into(),
-    }
-}
-
-
-// interp - takes the complete AST (ExprC) with an Env, returning a Value
-fn interp(e: &ExprC, env: &Env) -> Value {
-    match e {
-        ExprC::NumC(NumC {n}) => Value::Real(*n),
-        ExprC::StringC(StringC {s}) => Value::String(s.clone()),
-        ExprC::IdC(IdC {name}) => get_binding_val(name, env),
-        ExprC::IfC(IfC {v, iftrue, iffalse}) => {
-            let test_val = interp(v, env);
-            match test_val {
-                Value::Boolean(b) => {
-                    if b {
-                        interp(iftrue, env)
-                    } else {
-                        interp(iffalse, env)
-                    }
-                }
-                other => {
-                    panic!("SHEQ: if expected boolean test, got {:?}", other);
-                }
-            }
-        },
-        ExprC::AppC(AppC {expr, args}) => {
-            let f_val = interp(expr, env);
-            let arg_vals: Vec<Value> = args.iter().map(|a| interp(a, env)).collect();
-
-            match f_val {
-                Value::CloV(clo) => {
-                    if arg_vals.len() != clo.params.len() {
-                        panic!("SHEQ: Incorrect number of arguments, got {}, expected {}", arg_vals.len(), clo.params.len());
-                    }
-                    // extend the env
-                    let new_env = create_env(&clo.params, &arg_vals, &clo.env);
-                    interp(&clo.body, &new_env)
-                }
-                Value::PrimV(prim) => {
-                    todo!()
-                }
-                other => panic!("SHEQ: attempted to apply non function value of {:?}", other)
-            }
-        },
-        ExprC::LamC(LamC {args, body}) => {
-            Value::CloV(CloV {
-                params: args.clone(),
-                body: body.clone(),
-                env: env.clone(),
-            })
-        }
-        
     }
 }
 
@@ -210,8 +241,13 @@ fn main() {
     let env = top_env(); // copy of top_env
 
     println!("{:?}", serialize(&interp( &ExprC::IdC(IdC {name : "+".into()}), &env)));
-
-    println!("Hello world!");
+    let expr1 = ExprC::AppC(AppC {
+        expr: Box::new(ExprC:: IdC(IdC {name: "+".into()})),
+        args: vec![Box::new(ExprC:: NumC(NumC {n: 1.0})), 
+        Box::new(ExprC:: NumC(NumC {n: 2.0}))]});
+    
+    println!("{:?}", serialize(&interp(&expr1, &env)));
+    
 }
 
 // TESTS - run tests in terminal with "cargo test"
@@ -245,6 +281,19 @@ mod tests {
     }
 
     #[test]
+    fn interp_works() {
+        let env = top_env();
+
+        // test for PrimV + inside regular interp function
+        let expr1 = ExprC::AppC(AppC {
+            expr: Box::new(ExprC:: IdC(IdC {name: "+".into()})),
+            args: vec![Box::new(ExprC:: NumC(NumC {n: 1.0})), 
+            Box::new(ExprC:: NumC(NumC {n: 2.0}))]});
+        
+        assert_eq!(serialize(&interp(&expr1, &env)), "3");
+    }
+
+    #[test]
     fn interp_if() {
         let expr = ExprC::IfC(IfC {
             v: Box::new(ExprC::IdC(IdC {name: "true".into()})),
@@ -273,7 +322,13 @@ mod tests {
             other => panic!("SHEQ: Expected closure, got {:?}", other),
         }
     }
-
+    #[test]
+    fn interp_prim_add() {
+        let prim_add = PrimV {op: "+".into() };
+        let v_add = interp_prim(&prim_add, vec![Value::Real(3.0), Value::Real(10.0)]);
+        
+        assert!(matches!(v_add, Value::Real(13.0)));
+    }
 
 
 }
