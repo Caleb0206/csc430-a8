@@ -4,7 +4,7 @@
 // Data definitions
 
 // Value - Numbers, Booleans, String, CloV, PrimV
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Real(f64),
     Boolean(bool),
@@ -14,20 +14,21 @@ pub enum Value {
 }
 
 // CloV - Closures contain list of symbol params, body of ExprC, Env
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CloV {
     pub params: Vec<String>,
     pub body: Box<ExprC>,
     pub env: Env
 }
+
 // PrimV - Represents a primitive operator by its symbol
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PrimV {
     pub op: String
 }
 
 // Binding : pair of a Symbol and a Value
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Binding {
     pub name : String,
     pub val : Box<Value>
@@ -37,7 +38,7 @@ pub struct Binding {
 pub type Env = Vec<Binding>;
 
 // ExprC type : NumC, IfC, IdC, AppC, LamC, StringC
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ExprC {
     NumC(NumC),
     StringC(StringC),
@@ -48,25 +49,25 @@ pub enum ExprC {
 }
 
 // NumC : a Real
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NumC {
     pub n : f64
 }
 
 // StringC : a String
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct StringC {
     pub s : String
 }
 
 // IdC : a symbol representing an ID
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct IdC {
     pub name : String
 }
 
 // IfC : an if statement of ExprC, and ExprC's to act on if true or false
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct IfC {
     pub v : Box<ExprC>,
     pub iftrue : Box<ExprC>,
@@ -74,14 +75,14 @@ pub struct IfC {
 }
 
 // AppC : Represents a function application.function ExprC with a list of arg ExprC's
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AppC {
     pub expr : Box<ExprC>,
     pub args : Vec<Box<ExprC>>
 }
 
 // LamC - Lambdas contain a list of symbol args, and a body of ExprC
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LamC {
     pub args : Vec<String>,
     pub body : Box<ExprC>
@@ -106,7 +107,6 @@ pub fn top_env() -> Env {
         Binding { name: "error".into(), val: Box::new(Value::PrimV(PrimV { op: "error".into() })) },
     ]
 }
-
 
 // interp - takes the complete AST (ExprC) with an Env, returning a Value
 fn interp(e: &ExprC, env: &Env) -> Value {
@@ -178,11 +178,151 @@ fn interp_prim(prim: &PrimV, args: Vec<Value>) -> Value {
                 }
                 // wrong arity
                 _ => {
-                    panic!("SHEQ: Incorrect number or arguments, got {:?}", args.len());
+                    panic!("SHEQ: Incorrect number of arguments, got {:?}", args.len());
                 }
             }
         }
+        "-" => {
+            match args.as_slice() {
+                // correct arity and types
+                [Value::Real(a), Value::Real(b)] => Value::Real(a - b),
+                // correct arity but wrong types
+                [_, _] => {
+                    panic!("SHEQ: Primv - expected 2 numbers, got {:?}", args);
+                }
+                // wrong arity
+                _ => {
+                    panic!("SHEQ: Incorrect number of arguments, got {:?}", args.len());
+                }
+            }
+        }
+        "*" => {
+            match args.as_slice() {
+                // correct arity and types
+                [Value::Real(a), Value::Real(b)] => Value::Real(a * b),
+                // correct arity but wrong types
+                [_, _] => {
+                    panic!("SHEQ: Primv * expected 2 numbers, got {:?}", args);
+                }
+                // wrong arity
+                _ => {
+                    panic!("SHEQ: Incorrect number of arguments, got {:?}", args.len());
+                }
+            }
+        }
+        "/" => {
+            match args.as_slice() {
+                // correct arity and types
+                [Value::Real(a), Value::Real(b)] => if *b != 0.0 {
+                                                        Value::Real(a / b)
+                                                    }
+                                                    else {
+                                                        panic!("SHEQ: Divide by zero error")
+                                                    },
+                // correct arity but wrong types
+                [_, _] => {
+                    panic!("SHEQ: Primv / expected 2 numbers, got {:?}", args);
+                }
+                // wrong arity
+                _ => {
+                    panic!("SHEQ: Incorrect number of arguments, got {:?}", args.len());
+                }
+            }
+        }
+        "<=" => {
+            match args.as_slice() {
+                // correct arity and types
+                [Value::Real(a), Value::Real(b)] => if a <= b {
+                                                        Value::Boolean(true)
+                                                    }
+                                                    else {
+                                                        Value::Boolean(false)
+                                                    },
+                // correct arity but wrong types
+                [_, _] => {
+                    panic!("SHEQ: Primv <= expected 2 numbers, got {:?}", args);
+                }
+                // wrong arity
+                _ => {
+                    panic!("SHEQ: Incorrect number of arguments, got {:?}", args.len());
+                }
+            }
+        }
+        "equal?" => {
+            match args.as_slice() {
+                // correct arity 
+                [a, b] => if a == b 
+                        {
+                            Value::Boolean(true)
+                        }
+                        else 
+                        {
+                            Value::Boolean(false)
+                        }
+                // wrong arity
+                _ => {
+                    panic!("SHEQ: Incorrect number of arguments, got {:?}", args.len());
+                }
+            }
+        }
+        "substring" => {
+            match args.as_slice() {
+                // correct arity and types
+                [Value::String(string), Value::Real(start), Value::Real(stop)] =>   {
+                
+                if start.fract() != 0.0 || stop.fract() != 0.0 {
+                    panic!("SHEQ: substring expected integer indices, got {} and {}", start, stop);
+                }
 
+                let start_i = *start as usize;
+                let stop_i  = *stop as usize;
+
+                if start_i <= stop_i && stop_i <= string.len()
+                {
+                    Value::String(string[start_i..stop_i].to_string())
+                }
+                else
+                {
+                    panic!("SHEQ: string index out of range")
+                }}
+                // correct arity but wrong types
+                [_, _, _] => {
+                    panic!("SHEQ: Primv substring expected 1 string and 2 numbers, got {:?}", args);
+                }
+                // wrong arity
+                _ => {
+                    panic!("SHEQ: Incorrect number of arguments, got {:?}", args.len());
+                }
+            }
+        }
+        "strlen" => {
+            match args.as_slice() {
+                // correct arity and types
+                [Value::String(s)] => Value::Real(s.len() as f64),
+                // correct arity but wrong types
+                [_] => {
+                    panic!("SHEQ: Primv strlen expected string, got {:?}", args);
+                }
+                // wrong arity
+                _ => {
+                    panic!("SHEQ: Incorrect number of arguments, got {:?}", args.len());
+                }
+            }
+        }
+        "error" => {
+            match args.as_slice() {
+                // correct arity and types
+                [Value::String(e)] => panic!("SHEQ: {}", e),
+                // correct arity but wrong types
+                [_] => {
+                    panic!("SHEQ: Primv error expected string, got {:?}", args);
+                }
+                // wrong arity
+                _ => {
+                    panic!("SHEQ: Incorrect number of arguments, got {:?}", args.len());
+                }
+            }
+        }
         op => {
             panic!("SHEQ: Invalid PrimV op, got {}", op);
         }
