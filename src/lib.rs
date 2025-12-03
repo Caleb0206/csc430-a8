@@ -246,7 +246,7 @@ fn main() {
         args: vec![Box::new(ExprC:: NumC(NumC {n: 1.0})), 
         Box::new(ExprC:: NumC(NumC {n: 2.0}))]});
     
-    println!("{:?}", serialize(&interp(&expr1, &env)));
+    println!("(AppC (IdC \"+\") (list (NumC 1.0) (NumC 2.0))) => {:?}", serialize(&interp(&expr1, &env)));
     
 }
 
