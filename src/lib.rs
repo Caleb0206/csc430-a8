@@ -434,6 +434,16 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "id name is a reserved word")]
+    fn reserved_word_error() {
+        let env = top_env();
+        let expr = ExprC::IdC(IdC {
+            name: "if".into(),
+        });
+        let _ = interp(&expr, &env);
+    }
+
+    #[test]
     fn interp_if() {
         let expr = ExprC::IfC(IfC {
             v: Box::new(ExprC::IdC(IdC {name: "true".into()})),
@@ -442,6 +452,18 @@ mod tests {
         });
         let env = top_env();
         assert!(matches!( interp(&expr, &env), Value::Real(1.0) ))
+    }
+
+    #[test]
+    #[should_panic(expected = "if expected boolean test")]
+    fn non_bool_test() {
+        let expr = ExprC::IfC(IfC {
+            v: Box::new(ExprC::NumC(NumC {n: 1.0})),
+            iftrue: Box::new(ExprC::NumC(NumC {n: 1.0})),
+            iffalse: Box::new(ExprC::NumC(NumC {n: 2.0})),
+        });
+        let env = top_env();
+        let _ = interp(&expr, &env);
     }
 
     #[test]
@@ -479,6 +501,20 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Primv - expected 2 numbers")]
+    fn sub_wrong_types() {
+        let prim_swt = PrimV {op: "-".into() };
+        let _ = interp_prim(&prim_swt, vec![Value::Boolean(true), Value::Real(2.0)]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Incorrect number of arguments")]
+    fn sub_wrong_arity() {
+        let prim_swa = PrimV {op: "-".into() };
+        let _ = interp_prim(&prim_swa, vec![Value::Real(1.0)]);
+    }
+
+    #[test]
     fn interp_prim_mult() {
         let prim_mult = PrimV {op: "*".into() };
         let v_mult = interp_prim(&prim_mult, vec![Value::Real(4.0), Value::Real(3.0)]);
@@ -492,6 +528,13 @@ mod tests {
         let v_div = interp_prim(&prim_div, vec![Value::Real(12.0), Value::Real(2.0)]);
 
         assert!(matches!(v_div, Value::Real(6.0)));
+    }
+
+    #[test]
+    #[should_panic(expected = "Divide by zero error")]
+    fn div_zero_error() {
+        let prim_dze = PrimV {op: "/".into() };
+        let _ = interp_prim(&prim_dze, vec![Value::Real(2.0), Value::Real(0.0)]);
     }
 
     #[test]
@@ -518,10 +561,39 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Primv <=")]
+    fn leq_wrong_types() {
+        let prim_lwt = PrimV {op: "<=".into() };
+        let _ = interp_prim(&prim_lwt, vec![Value::Boolean(true), Value::Real(1.0)]);
+    }
+
+    #[test]
     fn interp_substr() {
         let prim_substr = PrimV {op: "substring".into() };
         let v_substr = interp_prim(&prim_substr, vec![Value::String("hello".into()), Value::Real(1.0), Value::Real(4.0)]);
         assert_eq!(v_substr, Value::String("ell".to_string()));
+    }
+
+    #[test]
+    #[should_panic(expected = "string index out of range")]
+    fn substr_idx_range_error() {
+        let prim_ire = PrimV {op: "substring".into() };
+        let _ = interp_prim(&prim_ire, vec![
+            Value::String("hi".into()),
+            Value::Real(0.0),
+            Value::Real(5.0)
+        ]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Primv substring expected 1 string and 2 numbers")]
+    fn substr_wrong_types() {
+        let prim_stwt = PrimV {op: "substring".into()};
+        let _ = interp_prim(&prim_stwt, vec![
+            Value::Boolean(true),
+            Value::Real(0.0),
+            Value::Real(5.0)
+        ]);
     }
 
     #[test]
@@ -564,6 +636,18 @@ mod tests {
         let v_appc = interp(&expr, &env);
         assert_eq!(v_appc, Value::Real(42.0));
     }
+
+    #[test]
+    #[should_panic(expected = "attempted to apply non function value")]
+    fn non_fval_error() {
+        let env = top_env();
+        let expr = ExprC::AppC(AppC {
+            expr: Box::new(ExprC::NumC(NumC {n: 1.0})),
+            args: vec![],
+        });
+        let _ = interp(&expr, &env);
+    }
+
 
 
 }
