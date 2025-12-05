@@ -423,7 +423,7 @@ fn create_env(params: &[String], vals: &[Value], base_env: &Env) -> Env {
     new_env
 }
 
-fn main() {
+pub fn run() {
     let env = top_env(); // copy of top_env
 
     println!(
