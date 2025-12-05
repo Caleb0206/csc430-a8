@@ -10,7 +10,7 @@ pub enum Value {
     Boolean(bool),
     String(String),
     CloV(CloV),
-    PrimV(PrimV)
+    PrimV(PrimV),
 }
 
 // CloV - Closures contain list of symbol params, body of ExprC, Env
@@ -18,20 +18,20 @@ pub enum Value {
 pub struct CloV {
     pub params: Vec<String>,
     pub body: Box<ExprC>,
-    pub env: Env
+    pub env: Env,
 }
 
 // PrimV - Represents a primitive operator by its symbol
 #[derive(Debug, Clone, PartialEq)]
 pub struct PrimV {
-    pub op: String
+    pub op: String,
 }
 
 // Binding : pair of a Symbol and a Value
 #[derive(Debug, Clone, PartialEq)]
 pub struct Binding {
-    pub name : String,
-    pub val : Box<Value>
+    pub name: String,
+    pub val: Box<Value>,
 }
 
 // Env : a list of Bindings
@@ -51,41 +51,41 @@ pub enum ExprC {
 // NumC : a Real
 #[derive(Debug, Clone, PartialEq)]
 pub struct NumC {
-    pub n : f64
+    pub n: f64,
 }
 
 // StringC : a String
 #[derive(Debug, Clone, PartialEq)]
 pub struct StringC {
-    pub s : String
+    pub s: String,
 }
 
 // IdC : a symbol representing an ID
 #[derive(Debug, Clone, PartialEq)]
 pub struct IdC {
-    pub name : String
+    pub name: String,
 }
 
 // IfC : an if statement of ExprC, and ExprC's to act on if true or false
 #[derive(Debug, Clone, PartialEq)]
 pub struct IfC {
-    pub v : Box<ExprC>,
-    pub iftrue : Box<ExprC>,
-    pub iffalse : Box<ExprC>
+    pub v: Box<ExprC>,
+    pub iftrue: Box<ExprC>,
+    pub iffalse: Box<ExprC>,
 }
 
 // AppC : Represents a function application.function ExprC with a list of arg ExprC's
 #[derive(Debug, Clone, PartialEq)]
 pub struct AppC {
-    pub expr : Box<ExprC>,
-    pub args : Vec<Box<ExprC>>
+    pub expr: Box<ExprC>,
+    pub args: Vec<Box<ExprC>>,
 }
 
 // LamC - Lambdas contain a list of symbol args, and a body of ExprC
 #[derive(Debug, Clone, PartialEq)]
 pub struct LamC {
-    pub args : Vec<String>,
-    pub body : Box<ExprC>
+    pub args: Vec<String>,
+    pub body: Box<ExprC>,
 }
 
 // reserved-keywords - a list of key-words
@@ -94,33 +94,72 @@ const RESERVED_KEYWORDS: [&str; 7] = ["if", "lambda", "let", "=", "in", "end", "
 // top_env
 pub fn top_env() -> Env {
     vec![
-        Binding { name: "true".into(), val: Box::new(Value::Boolean(true)) },
-        Binding { name: "false".into(), val: Box::new(Value::Boolean(false)) },
-        Binding { name: "+".into(), val: Box::new(Value::PrimV(PrimV { op: "+".into() })) },
-        Binding { name: "-".into(), val: Box::new(Value::PrimV(PrimV { op: "-".into() })) },
-        Binding { name: "*".into(), val: Box::new(Value::PrimV(PrimV { op: "*".into() })) },
-        Binding { name: "/".into(), val: Box::new(Value::PrimV(PrimV { op: "/".into() })) },
-        Binding { name: "<=".into(), val: Box::new(Value::PrimV(PrimV { op: "<=".into() })) },
-        Binding { name: "equal?".into(), val: Box::new(Value::PrimV(PrimV { op: "equal?".into() })) },
-        Binding { name: "substring".into(), val: Box::new(Value::PrimV(PrimV { op: "substring".into() })) },
-        Binding { name: "strlen".into(), val: Box::new(Value::PrimV(PrimV { op: "strlen".into() })) },
-        Binding { name: "error".into(), val: Box::new(Value::PrimV(PrimV { op: "error".into() })) },
+        Binding {
+            name: "true".into(),
+            val: Box::new(Value::Boolean(true)),
+        },
+        Binding {
+            name: "false".into(),
+            val: Box::new(Value::Boolean(false)),
+        },
+        Binding {
+            name: "+".into(),
+            val: Box::new(Value::PrimV(PrimV { op: "+".into() })),
+        },
+        Binding {
+            name: "-".into(),
+            val: Box::new(Value::PrimV(PrimV { op: "-".into() })),
+        },
+        Binding {
+            name: "*".into(),
+            val: Box::new(Value::PrimV(PrimV { op: "*".into() })),
+        },
+        Binding {
+            name: "/".into(),
+            val: Box::new(Value::PrimV(PrimV { op: "/".into() })),
+        },
+        Binding {
+            name: "<=".into(),
+            val: Box::new(Value::PrimV(PrimV { op: "<=".into() })),
+        },
+        Binding {
+            name: "equal?".into(),
+            val: Box::new(Value::PrimV(PrimV {
+                op: "equal?".into(),
+            })),
+        },
+        Binding {
+            name: "substring".into(),
+            val: Box::new(Value::PrimV(PrimV {
+                op: "substring".into(),
+            })),
+        },
+        Binding {
+            name: "strlen".into(),
+            val: Box::new(Value::PrimV(PrimV {
+                op: "strlen".into(),
+            })),
+        },
+        Binding {
+            name: "error".into(),
+            val: Box::new(Value::PrimV(PrimV { op: "error".into() })),
+        },
     ]
 }
 
 // interp - takes the complete AST (ExprC) with an Env, returning a Value
 fn interp(e: &ExprC, env: &Env) -> Value {
     match e {
-        ExprC::NumC(NumC {n}) => Value::Real(*n),
-        ExprC::StringC(StringC {s}) => Value::String(s.clone()),
-        ExprC::IdC(IdC {name}) => {
+        ExprC::NumC(NumC { n }) => Value::Real(*n),
+        ExprC::StringC(StringC { s }) => Value::String(s.clone()),
+        ExprC::IdC(IdC { name }) => {
             if is_reserved(name) {
                 panic!("SHEQ: id name is a reserved word, got {}", name);
             } else {
                 get_binding_val(name, env)
             }
-        },
-        ExprC::IfC(IfC {v, iftrue, iffalse}) => {
+        }
+        ExprC::IfC(IfC { v, iftrue, iffalse }) => {
             let test_val = interp(v, env);
             match test_val {
                 Value::Boolean(b) => {
@@ -134,34 +173,33 @@ fn interp(e: &ExprC, env: &Env) -> Value {
                     panic!("SHEQ: if expected boolean test, got {:?}", other);
                 }
             }
-        },
-        ExprC::LamC(LamC {args, body}) => {
-            Value::CloV(CloV {
-                params: args.clone(),
-                body: body.clone(),
-                env: env.clone(),
-            })
-        },
-        ExprC::AppC(AppC {expr, args}) => {
+        }
+        ExprC::LamC(LamC { args, body }) => Value::CloV(CloV {
+            params: args.clone(),
+            body: body.clone(),
+            env: env.clone(),
+        }),
+        ExprC::AppC(AppC { expr, args }) => {
             let f_val = interp(expr, env);
             let arg_vals: Vec<Value> = args.iter().map(|a| interp(a, env)).collect();
 
             match f_val {
                 Value::CloV(clo) => {
                     if arg_vals.len() != clo.params.len() {
-                        panic!("SHEQ: Incorrect number of arguments, got {}, expected {}", arg_vals.len(), clo.params.len());
+                        panic!(
+                            "SHEQ: Incorrect number of arguments, got {}, expected {}",
+                            arg_vals.len(),
+                            clo.params.len()
+                        );
                     }
                     // extend the env
                     let new_env = create_env(&clo.params, &arg_vals, &clo.env);
                     interp(&clo.body, &new_env)
                 }
-                Value::PrimV(prim) => {
-                    interp_prim(&prim, arg_vals)
-                }
-                other => panic!("SHEQ: attempted to apply non function value of {:?}", other)
+                Value::PrimV(prim) => interp_prim(&prim, arg_vals),
+                other => panic!("SHEQ: attempted to apply non function value of {:?}", other),
             }
-        },
-        
+        }
     }
 }
 
@@ -213,12 +251,13 @@ fn interp_prim(prim: &PrimV, args: Vec<Value>) -> Value {
         "/" => {
             match args.as_slice() {
                 // correct arity and types
-                [Value::Real(a), Value::Real(b)] => if *b != 0.0 {
-                                                        Value::Real(a / b)
-                                                    }
-                                                    else {
-                                                        panic!("SHEQ: Divide by zero error")
-                                                    },
+                [Value::Real(a), Value::Real(b)] => {
+                    if *b != 0.0 {
+                        Value::Real(a / b)
+                    } else {
+                        panic!("SHEQ: Divide by zero error")
+                    }
+                }
                 // correct arity but wrong types
                 [_, _] => {
                     panic!("SHEQ: Primv / expected 2 numbers, got {:?}", args);
@@ -232,12 +271,13 @@ fn interp_prim(prim: &PrimV, args: Vec<Value>) -> Value {
         "<=" => {
             match args.as_slice() {
                 // correct arity and types
-                [Value::Real(a), Value::Real(b)] => if a <= b {
-                                                        Value::Boolean(true)
-                                                    }
-                                                    else {
-                                                        Value::Boolean(false)
-                                                    },
+                [Value::Real(a), Value::Real(b)] => {
+                    if a <= b {
+                        Value::Boolean(true)
+                    } else {
+                        Value::Boolean(false)
+                    }
+                }
                 // correct arity but wrong types
                 [_, _] => {
                     panic!("SHEQ: Primv <= expected 2 numbers, got {:?}", args);
@@ -250,15 +290,14 @@ fn interp_prim(prim: &PrimV, args: Vec<Value>) -> Value {
         }
         "equal?" => {
             match args.as_slice() {
-                // correct arity 
-                [a, b] => if a == b 
-                        {
-                            Value::Boolean(true)
-                        }
-                        else 
-                        {
-                            Value::Boolean(false)
-                        }
+                // correct arity
+                [a, b] => {
+                    if a == b {
+                        Value::Boolean(true)
+                    } else {
+                        Value::Boolean(false)
+                    }
+                }
                 // wrong arity
                 _ => {
                     panic!("SHEQ: Incorrect number of arguments, got {:?}", args.len());
@@ -268,26 +307,29 @@ fn interp_prim(prim: &PrimV, args: Vec<Value>) -> Value {
         "substring" => {
             match args.as_slice() {
                 // correct arity and types
-                [Value::String(string), Value::Real(start), Value::Real(stop)] =>   {
-                
-                if start.fract() != 0.0 || stop.fract() != 0.0 {
-                    panic!("SHEQ: substring expected integer indices, got {} and {}", start, stop);
-                }
+                [Value::String(string), Value::Real(start), Value::Real(stop)] => {
+                    if start.fract() != 0.0 || stop.fract() != 0.0 {
+                        panic!(
+                            "SHEQ: substring expected integer indices, got {} and {}",
+                            start, stop
+                        );
+                    }
 
-                let start_i = *start as usize;
-                let stop_i  = *stop as usize;
+                    let start_i = *start as usize;
+                    let stop_i = *stop as usize;
 
-                if start_i <= stop_i && stop_i <= string.len()
-                {
-                    Value::String(string[start_i..stop_i].to_string())
+                    if start_i <= stop_i && stop_i <= string.len() {
+                        Value::String(string[start_i..stop_i].to_string())
+                    } else {
+                        panic!("SHEQ: string index out of range")
+                    }
                 }
-                else
-                {
-                    panic!("SHEQ: string index out of range")
-                }}
                 // correct arity but wrong types
                 [_, _, _] => {
-                    panic!("SHEQ: Primv substring expected 1 string and 2 numbers, got {:?}", args);
+                    panic!(
+                        "SHEQ: Primv substring expected 1 string and 2 numbers, got {:?}",
+                        args
+                    );
                 }
                 // wrong arity
                 _ => {
@@ -329,7 +371,6 @@ fn interp_prim(prim: &PrimV, args: Vec<Value>) -> Value {
     }
 }
 
-
 // is_reserved - helper method to check if word is reserved
 fn is_reserved(name: &str) -> bool {
     RESERVED_KEYWORDS.iter().any(|kw| kw == &name)
@@ -343,8 +384,7 @@ fn get_binding_val(name: &str, env: &Env) -> Value {
         }
     }
     panic!("SHEQ: unbound identifier '{}'", name);
-}   
-
+}
 
 // serialize - takes a Value and returns a serialized String
 fn serialize(v: &Value) -> String {
@@ -352,7 +392,7 @@ fn serialize(v: &Value) -> String {
         Value::Real(n) => format!("{}", n),
         Value::Boolean(true) => "true".into(),
         Value::Boolean(false) => "false".into(),
-        Value::String(s) => format!("{:?}", s),  // :? is same as ~v from Racket
+        Value::String(s) => format!("{:?}", s), // :? is same as ~v from Racket
         Value::CloV(_) => "#<procedure>".into(),
         Value::PrimV(_) => "#<primop>".into(),
     }
@@ -361,14 +401,20 @@ fn serialize(v: &Value) -> String {
 // create_env - takes a list of params, list of vals, and an Env to return a new extended Env
 fn create_env(params: &[String], vals: &[Value], base_env: &Env) -> Env {
     if params.len() < vals.len() {
-        panic!("SHEQ: too many values were passed into the applicatoin {:?} {:?}", params, vals);
+        panic!(
+            "SHEQ: too many values were passed into the application {:?} {:?}",
+            params, vals
+        );
     }
     if params.len() > vals.len() {
-        panic!("SHEQ: too few values were passed in application {:?} {:?}", params, vals);
+        panic!(
+            "SHEQ: too few values were passed in application {:?} {:?}",
+            params, vals
+        );
     }
 
     let mut new_env = base_env.clone();
-    for(p, v) in params.iter().zip(vals.iter()) {
+    for (p, v) in params.iter().zip(vals.iter()) {
         new_env.push(Binding {
             name: p.clone(),
             val: Box::new(v.clone()),
@@ -380,14 +426,22 @@ fn create_env(params: &[String], vals: &[Value], base_env: &Env) -> Env {
 fn main() {
     let env = top_env(); // copy of top_env
 
-    println!("{:?}", serialize(&interp( &ExprC::IdC(IdC {name : "+".into()}), &env)));
+    println!(
+        "{:?}",
+        serialize(&interp(&ExprC::IdC(IdC { name: "+".into() }), &env))
+    );
     let expr1 = ExprC::AppC(AppC {
-        expr: Box::new(ExprC:: IdC(IdC {name: "+".into()})),
-        args: vec![Box::new(ExprC:: NumC(NumC {n: 1.0})), 
-        Box::new(ExprC:: NumC(NumC {n: 2.0}))]});
-    
-    println!("(AppC (IdC \"+\") (list (NumC 1.0) (NumC 2.0))) => {:?}", serialize(&interp(&expr1, &env)));
-    
+        expr: Box::new(ExprC::IdC(IdC { name: "+".into() })),
+        args: vec![
+            Box::new(ExprC::NumC(NumC { n: 1.0 })),
+            Box::new(ExprC::NumC(NumC { n: 2.0 })),
+        ],
+    });
+
+    println!(
+        "(AppC (IdC \"+\") (list (NumC 1.0) (NumC 2.0))) => {:?}",
+        serialize(&interp(&expr1, &env))
+    );
 }
 
 // TESTS - run tests in terminal with "cargo test"
@@ -412,12 +466,16 @@ mod tests {
         let env = top_env();
         let clo = Value::CloV(CloV {
             params: vec!["x".into()],
-            body: Box::new(ExprC:: NumC(NumC {n: 112.0})),
+            body: Box::new(ExprC::NumC(NumC { n: 112.0 })),
             env: env,
         });
         assert_eq!(serialize(&clo), "#<procedure>");
-        assert_eq!(serialize(&Value::PrimV(PrimV {op: "equal?".into()})), "#<primop>"); 
-
+        assert_eq!(
+            serialize(&Value::PrimV(PrimV {
+                op: "equal?".into()
+            })),
+            "#<primop>"
+        );
     }
 
     #[test]
@@ -426,10 +484,13 @@ mod tests {
 
         // test for PrimV + inside regular interp function
         let expr1 = ExprC::AppC(AppC {
-            expr: Box::new(ExprC:: IdC(IdC {name: "+".into()})),
-            args: vec![Box::new(ExprC:: NumC(NumC {n: 1.0})), 
-            Box::new(ExprC:: NumC(NumC {n: 2.0}))]});
-        
+            expr: Box::new(ExprC::IdC(IdC { name: "+".into() })),
+            args: vec![
+                Box::new(ExprC::NumC(NumC { n: 1.0 })),
+                Box::new(ExprC::NumC(NumC { n: 2.0 })),
+            ],
+        });
+
         assert_eq!(serialize(&interp(&expr1, &env)), "3");
     }
 
@@ -437,30 +498,30 @@ mod tests {
     #[should_panic(expected = "id name is a reserved word")]
     fn reserved_word_error() {
         let env = top_env();
-        let expr = ExprC::IdC(IdC {
-            name: "if".into(),
-        });
+        let expr = ExprC::IdC(IdC { name: "if".into() });
         let _ = interp(&expr, &env);
     }
 
     #[test]
     fn interp_if() {
         let expr = ExprC::IfC(IfC {
-            v: Box::new(ExprC::IdC(IdC {name: "true".into()})),
-            iftrue: Box::new(ExprC::NumC(NumC {n: 1.0})),
-            iffalse: Box::new(ExprC::NumC(NumC {n: 2.0})),
+            v: Box::new(ExprC::IdC(IdC {
+                name: "true".into(),
+            })),
+            iftrue: Box::new(ExprC::NumC(NumC { n: 1.0 })),
+            iffalse: Box::new(ExprC::NumC(NumC { n: 2.0 })),
         });
         let env = top_env();
-        assert!(matches!( interp(&expr, &env), Value::Real(1.0) ))
+        assert!(matches!(interp(&expr, &env), Value::Real(1.0)))
     }
 
     #[test]
     #[should_panic(expected = "if expected boolean test")]
     fn non_bool_test() {
         let expr = ExprC::IfC(IfC {
-            v: Box::new(ExprC::NumC(NumC {n: 1.0})),
-            iftrue: Box::new(ExprC::NumC(NumC {n: 1.0})),
-            iffalse: Box::new(ExprC::NumC(NumC {n: 2.0})),
+            v: Box::new(ExprC::NumC(NumC { n: 1.0 })),
+            iftrue: Box::new(ExprC::NumC(NumC { n: 1.0 })),
+            iffalse: Box::new(ExprC::NumC(NumC { n: 2.0 })),
         });
         let env = top_env();
         let _ = interp(&expr, &env);
@@ -472,7 +533,7 @@ mod tests {
 
         let lam_expr = ExprC::LamC(LamC {
             args: vec!["x".into()],
-            body: Box::new(ExprC::NumC(NumC { n: 5.0})),
+            body: Box::new(ExprC::NumC(NumC { n: 5.0 })),
         });
 
         let v = interp(&lam_expr, &env);
@@ -486,15 +547,15 @@ mod tests {
     }
     #[test]
     fn interp_prim_add() {
-        let prim_add = PrimV {op: "+".into() };
+        let prim_add = PrimV { op: "+".into() };
         let v_add = interp_prim(&prim_add, vec![Value::Real(3.0), Value::Real(10.0)]);
-        
+
         assert!(matches!(v_add, Value::Real(13.0)));
     }
 
     #[test]
     fn interp_prim_sub() {
-        let prim_sub = PrimV {op: "-".into() };
+        let prim_sub = PrimV { op: "-".into() };
         let v_sub = interp_prim(&prim_sub, vec![Value::Real(10.0), Value::Real(2.0)]);
 
         assert!(matches!(v_sub, Value::Real(8.0)));
@@ -503,20 +564,20 @@ mod tests {
     #[test]
     #[should_panic(expected = "Primv - expected 2 numbers")]
     fn sub_wrong_types() {
-        let prim_swt = PrimV {op: "-".into() };
+        let prim_swt = PrimV { op: "-".into() };
         let _ = interp_prim(&prim_swt, vec![Value::Boolean(true), Value::Real(2.0)]);
     }
 
     #[test]
     #[should_panic(expected = "Incorrect number of arguments")]
     fn sub_wrong_arity() {
-        let prim_swa = PrimV {op: "-".into() };
+        let prim_swa = PrimV { op: "-".into() };
         let _ = interp_prim(&prim_swa, vec![Value::Real(1.0)]);
     }
 
     #[test]
     fn interp_prim_mult() {
-        let prim_mult = PrimV {op: "*".into() };
+        let prim_mult = PrimV { op: "*".into() };
         let v_mult = interp_prim(&prim_mult, vec![Value::Real(4.0), Value::Real(3.0)]);
 
         assert!(matches!(v_mult, Value::Real(12.0)));
@@ -524,7 +585,7 @@ mod tests {
 
     #[test]
     fn interp_prim_div() {
-        let prim_div = PrimV {op: "/".into() };
+        let prim_div = PrimV { op: "/".into() };
         let v_div = interp_prim(&prim_div, vec![Value::Real(12.0), Value::Real(2.0)]);
 
         assert!(matches!(v_div, Value::Real(6.0)));
@@ -533,13 +594,13 @@ mod tests {
     #[test]
     #[should_panic(expected = "Divide by zero error")]
     fn div_zero_error() {
-        let prim_dze = PrimV {op: "/".into() };
+        let prim_dze = PrimV { op: "/".into() };
         let _ = interp_prim(&prim_dze, vec![Value::Real(2.0), Value::Real(0.0)]);
     }
 
     #[test]
     fn interp_prim_leq() {
-        let prim_leq = PrimV {op: "<=".into() };
+        let prim_leq = PrimV { op: "<=".into() };
         let v_leq1 = interp_prim(&prim_leq, vec![Value::Real(1.0), Value::Real(2.0)]);
         assert!(matches!(v_leq1, Value::Boolean(true)));
 
@@ -549,56 +610,78 @@ mod tests {
 
     #[test]
     fn interp_eq() {
-        let prim_eq = PrimV {op: "equal?".into() };
+        let prim_eq = PrimV {
+            op: "equal?".into(),
+        };
         let v_eq1 = interp_prim(&prim_eq, vec![Value::Real(3.0), Value::Real(3.0)]);
         assert!(matches!(v_eq1, Value::Boolean(true)));
 
         let v_eq2 = interp_prim(&prim_eq, vec![Value::Real(2.0), Value::Real(3.0)]);
         assert!(matches!(v_eq2, Value::Boolean(false)));
 
-        let v_eq3 = interp_prim(&prim_eq, vec![Value::String("hi".into()), Value::String("hi".into())]);
+        let v_eq3 = interp_prim(
+            &prim_eq,
+            vec![Value::String("hi".into()), Value::String("hi".into())],
+        );
         assert!(matches!(v_eq3, Value::Boolean(true)));
     }
 
     #[test]
     #[should_panic(expected = "Primv <=")]
     fn leq_wrong_types() {
-        let prim_lwt = PrimV {op: "<=".into() };
+        let prim_lwt = PrimV { op: "<=".into() };
         let _ = interp_prim(&prim_lwt, vec![Value::Boolean(true), Value::Real(1.0)]);
     }
 
     #[test]
     fn interp_substr() {
-        let prim_substr = PrimV {op: "substring".into() };
-        let v_substr = interp_prim(&prim_substr, vec![Value::String("hello".into()), Value::Real(1.0), Value::Real(4.0)]);
+        let prim_substr = PrimV {
+            op: "substring".into(),
+        };
+        let v_substr = interp_prim(
+            &prim_substr,
+            vec![
+                Value::String("hello".into()),
+                Value::Real(1.0),
+                Value::Real(4.0),
+            ],
+        );
         assert_eq!(v_substr, Value::String("ell".to_string()));
     }
 
     #[test]
     #[should_panic(expected = "string index out of range")]
     fn substr_idx_range_error() {
-        let prim_ire = PrimV {op: "substring".into() };
-        let _ = interp_prim(&prim_ire, vec![
-            Value::String("hi".into()),
-            Value::Real(0.0),
-            Value::Real(5.0)
-        ]);
+        let prim_ire = PrimV {
+            op: "substring".into(),
+        };
+        let _ = interp_prim(
+            &prim_ire,
+            vec![
+                Value::String("hi".into()),
+                Value::Real(0.0),
+                Value::Real(5.0),
+            ],
+        );
     }
 
     #[test]
     #[should_panic(expected = "Primv substring expected 1 string and 2 numbers")]
     fn substr_wrong_types() {
-        let prim_stwt = PrimV {op: "substring".into()};
-        let _ = interp_prim(&prim_stwt, vec![
-            Value::Boolean(true),
-            Value::Real(0.0),
-            Value::Real(5.0)
-        ]);
+        let prim_stwt = PrimV {
+            op: "substring".into(),
+        };
+        let _ = interp_prim(
+            &prim_stwt,
+            vec![Value::Boolean(true), Value::Real(0.0), Value::Real(5.0)],
+        );
     }
 
     #[test]
     fn interp_strl() {
-        let prim_strl = PrimV {op: "strlen".into()};
+        let prim_strl = PrimV {
+            op: "strlen".into(),
+        };
         let v_strl = interp_prim(&prim_strl, vec![Value::String("hello".into())]);
         assert_eq!(v_strl, Value::Real(5.0));
     }
@@ -606,14 +689,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Primv error expected string")]
     fn interp_prim_error_type() {
-        let prim_et = PrimV {op: "error".into()};
+        let prim_et = PrimV { op: "error".into() };
         let _ = interp_prim(&prim_et, vec![Value::Real(1.0)]);
     }
 
     #[test]
     #[should_panic(expected = "Incorrect number of arguments")]
     fn interp_prim_error_arity() {
-        let prim_ea = PrimV {op: "error".into()};
+        let prim_ea = PrimV { op: "error".into() };
         let _ = interp_prim(&prim_ea, vec![]);
     }
 
@@ -624,13 +707,9 @@ mod tests {
         let expr = ExprC::AppC(AppC {
             expr: Box::new(ExprC::LamC(LamC {
                 args: vec!["x".into()],
-                body: Box::new(ExprC::IdC(IdC {
-                    name: "x".into(),
-                })),
+                body: Box::new(ExprC::IdC(IdC { name: "x".into() })),
             })),
-            args: vec![Box::new(ExprC::NumC(NumC {
-                n: 42.0
-            }))],
+            args: vec![Box::new(ExprC::NumC(NumC { n: 42.0 }))],
         });
 
         let v_appc = interp(&expr, &env);
@@ -642,12 +721,10 @@ mod tests {
     fn non_fval_error() {
         let env = top_env();
         let expr = ExprC::AppC(AppC {
-            expr: Box::new(ExprC::NumC(NumC {n: 1.0})),
+            expr: Box::new(ExprC::NumC(NumC { n: 1.0 })),
             args: vec![],
         });
         let _ = interp(&expr, &env);
     }
-
-
-
 }
+
