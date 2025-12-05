@@ -470,5 +470,100 @@ mod tests {
         assert!(matches!(v_add, Value::Real(13.0)));
     }
 
+    #[test]
+    fn interp_prim_sub() {
+        let prim_sub = PrimV {op: "-".into() };
+        let v_sub = interp_prim(&prim_sub, vec![Value::Real(10.0), Value::Real(2.0)]);
+
+        assert!(matches!(v_sub, Value::Real(8.0)));
+    }
+
+    #[test]
+    fn interp_prim_mult() {
+        let prim_mult = PrimV {op: "*".into() };
+        let v_mult = interp_prim(&prim_mult, vec![Value::Real(4.0), Value::Real(3.0)]);
+
+        assert!(matches!(v_mult, Value::Real(12.0)));
+    }
+
+    #[test]
+    fn interp_prim_div() {
+        let prim_div = PrimV {op: "/".into() };
+        let v_div = interp_prim(&prim_div, vec![Value::Real(12.0), Value::Real(2.0)]);
+
+        assert!(matches!(v_div, Value::Real(6.0)));
+    }
+
+    #[test]
+    fn interp_prim_leq() {
+        let prim_leq = PrimV {op: "<=".into() };
+        let v_leq1 = interp_prim(&prim_leq, vec![Value::Real(1.0), Value::Real(2.0)]);
+        assert!(matches!(v_leq1, Value::Boolean(true)));
+
+        let v_leq2 = interp_prim(&prim_leq, vec![Value::Real(2.0), Value::Real(1.0)]);
+        assert!(matches!(v_leq2, Value::Boolean(false)));
+    }
+
+    #[test]
+    fn interp_eq() {
+        let prim_eq = PrimV {op: "equal?".into() };
+        let v_eq1 = interp_prim(&prim_eq, vec![Value::Real(3.0), Value::Real(3.0)]);
+        assert!(matches!(v_eq1, Value::Boolean(true)));
+
+        let v_eq2 = interp_prim(&prim_eq, vec![Value::Real(2.0), Value::Real(3.0)]);
+        assert!(matches!(v_eq2, Value::Boolean(false)));
+
+        let v_eq3 = interp_prim(&prim_eq, vec![Value::String("hi".into()), Value::String("hi".into())]);
+        assert!(matches!(v_eq3, Value::Boolean(true)));
+    }
+
+    #[test]
+    fn interp_substr() {
+        let prim_substr = PrimV {op: "substring".into() };
+        let v_substr = interp_prim(&prim_substr, vec![Value::String("hello".into()), Value::Real(1.0), Value::Real(4.0)]);
+        assert_eq!(v_substr, Value::String("ell".to_string()));
+    }
+
+    #[test]
+    fn interp_strl() {
+        let prim_strl = PrimV {op: "strlen".into()};
+        let v_strl = interp_prim(&prim_strl, vec![Value::String("hello".into())]);
+        assert_eq!(v_strl, Value::Real(5.0));
+    }
+
+    #[test]
+    #[should_panic(expected = "Primv error expected string")]
+    fn interp_prim_error_type() {
+        let prim_et = PrimV {op: "error".into()};
+        let _ = interp_prim(&prim_et, vec![Value::Real(1.0)]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Incorrect number of arguments")]
+    fn interp_prim_error_arity() {
+        let prim_ea = PrimV {op: "error".into()};
+        let _ = interp_prim(&prim_ea, vec![]);
+    }
+
+    #[test]
+    fn interp_appc() {
+        let env = top_env();
+        // this is going to be ( (lambda (x) x) 42)
+        let expr = ExprC::AppC(AppC {
+            expr: Box::new(ExprC::LamC(LamC {
+                args: vec!["x".into()],
+                body: Box::new(ExprC::IdC(IdC {
+                    name: "x".into(),
+                })),
+            })),
+            args: vec![Box::new(ExprC::NumC(NumC {
+                n: 42.0
+            }))],
+        });
+
+        let v_appc = interp(&expr, &env);
+        assert_eq!(v_appc, Value::Real(42.0));
+    }
+
 
 }
